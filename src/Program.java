@@ -7,6 +7,10 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import javax.imageio.ImageIO;
 import org.apache.commons.io.FileUtils;
@@ -15,19 +19,47 @@ import org.imgscalr.Scalr;
 public class Program {
 
 	final static int SIZEIMG = 64;
+	public static Map<String, String> Name_Key = null;
+	public static Map<String, Integer> Key_Counter = null;
 
 	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
-		HashMap<String, String> Name_Key = new HashMap<>();
-		HashMap<String, Integer> Key_Counter = new HashMap<>();
 
 		long startTime = System.nanoTime();
-		String dirname = "C:\\Users\\liran\\Desktop\\google-images-download\\google_images_download\\downloads\\Apple and Banana and Elephant";
-		PartOne_FindallDuplicate(dirname, Name_Key, Key_Counter);
+
+		Name_Key = new ConcurrentHashMap<String, String>();
+		Key_Counter = new ConcurrentHashMap<String, Integer>();
+
+		MultiThreadPartOne();
+
+		PartTwo_DeleteFile();
+
+		System.out.println("size " + Name_Key.size());
+
 		long endTime = System.nanoTime();
 
 		long seconds = TimeUnit.NANOSECONDS.toSeconds(endTime - startTime);
-		System.out.println("Time program in seconds " + seconds);
+
+		System.out.println("time " + seconds);
+
+	}
+
+	private static void MultiThreadPartOne() throws InterruptedException {
+		// TODO Auto-generated method stub
+
+		ExecutorService executor = Executors.newCachedThreadPool();
+		String dir = "C:\\Users\\liran\\Desktop\\google-images-download\\google_images_download\\downloads\\Apple and Banana and Elephant";
+
+		Iterator<File> directoryListing = FileUtils.iterateFiles(new File(dir),
+				new String[] { "jpg", "png", "jpeg", "gif", "JPG", "PNG" }, true);
+
+		while (directoryListing.hasNext()) {
+			File child = directoryListing.next();
+			executor.execute(new FileHashThread(child, Name_Key, Key_Counter));
+		}
+
+		executor.shutdown();
+		executor.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
 
 	}
 
@@ -57,7 +89,7 @@ public class Program {
 		}
 	}
 
-	private static void PartTwo_DeleteFile(HashMap<String, Integer> Key_Counter, HashMap<String, String> Name_Key) {
+	private static void PartTwo_DeleteFile() {
 		// TODO Auto-generated method stub
 
 		for (String key : Key_Counter.keySet()) {
